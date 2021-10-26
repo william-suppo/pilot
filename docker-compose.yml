@@ -1,0 +1,81 @@
+version: '3'
+
+networks:
+  web:
+    external: true
+  app:
+    driver: bridge
+
+volumes:
+  db:
+    driver: local
+  matomo:
+    driver: local
+
+services:
+  traefik:
+    image: traefik:2.4
+    restart: always
+    networks:
+      - web    
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - './traefik.toml:/etc/traefik/traefik.toml'      
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+
+  db:
+    image: mariadb
+    command: --max-allowed-packet=64MB
+    restart: always
+    networks:
+      - app    
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    env_file:
+      - ./db.env
+    labels:
+      - "traefik.enable=false"
+
+  app:
+    image: matomo:fpm-alpine
+    restart: always
+    networks:
+      - app
+    volumes:
+#      - ./config:/var/www/html/config:rw
+#      - ./logs:/var/www/html/logs
+      - matomo:/var/www/html
+    environment:
+      - MATOMO_DATABASE_HOST=db
+    env_file:
+      - ./db.env
+    labels:
+      - "traefik.enable=false"      
+
+  web:
+    image: nginx:alpine
+    restart: always
+    networks:
+      - app
+      - web    
+    volumes:
+      - matomo:/var/www/html:ro
+      - ./host.conf:/etc/nginx/conf.d/default.conf:ro
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+      - "traefik.http.routers.app-http.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.app-http.entrypoints=http"
+      - "traefik.http.routers.app-http.middlewares=https-redirect@docker"
+
+      - "traefik.http.routers.app-https.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.app-https.entrypoints=https"
+      - "traefik.http.routers.app-https.tls=true"
+      - "traefik.http.routers.app-https.tls.certresolver=letsencrypt"
