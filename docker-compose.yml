@@ -11,6 +11,8 @@ volumes:
     driver: local
   matomo:
     driver: local
+  uptime-kuma:
+    driver: local
 
 services:
   traefik:
@@ -71,11 +73,33 @@ services:
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
-      - "traefik.http.routers.app-http.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.app-http.rule=Host(`${HOST_MATOMO}`)"
       - "traefik.http.routers.app-http.entrypoints=http"
       - "traefik.http.routers.app-http.middlewares=https-redirect@docker"
 
-      - "traefik.http.routers.app-https.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.app-https.rule=Host(`${HOST_MATOMO}`)"
       - "traefik.http.routers.app-https.entrypoints=https"
       - "traefik.http.routers.app-https.tls=true"
       - "traefik.http.routers.app-https.tls.certresolver=letsencrypt"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    restart: always
+    networks:
+      - web      
+    volumes:
+      - uptime-kuma:/app/data
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+      - "traefik.http.routers.kuma-http.rule=Host(`${HOST_KUMA}`)"
+      - "traefik.http.routers.kuma-http.entrypoints=http"
+      - "traefik.http.routers.kuma-http.middlewares=https-redirect@docker"
+
+      - "traefik.http.routers.kuma-https.rule=Host(`${HOST_KUMA}`)"
+      - "traefik.http.routers.kuma-https.entrypoints=https"
+      - "traefik.http.routers.kuma-https.tls=true"
+      - "traefik.http.routers.kuma-https.tls.certresolver=letsencrypt"      
