@@ -73,8 +73,6 @@ services:
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
-      - "traefik.http.services.kuma-service.loadbalancer.server.port=3001"
-
       - "traefik.http.routers.app-http.rule=Host(`${HOST_MATOMO}`)"
       - "traefik.http.routers.app-http.entrypoints=http"
       - "traefik.http.routers.app-http.middlewares=https-redirect@docker"
@@ -96,6 +94,8 @@ services:
 
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+      - "traefik.http.services.kuma-service.loadbalancer.server.port=3001"      
 
       - "traefik.http.routers.kuma-http.rule=Host(`${HOST_KUMA}`)"
       - "traefik.http.routers.kuma-http.entrypoints=http"
